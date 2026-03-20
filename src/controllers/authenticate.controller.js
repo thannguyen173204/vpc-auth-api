@@ -44,7 +44,9 @@ export const Login = asyncHandler(async (req, res) => {
     })
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        maxAge: process.env.REFESH_TOKEN_TTL
+        maxAge: process.env.REFESH_TOKEN_TTL,
+        samesite: 'none',
+        secure: true
     });
     return res.status(200).json({
         messeage: `User ${user.display_name} logged in.`,
