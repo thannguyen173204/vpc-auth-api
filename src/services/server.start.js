@@ -1,7 +1,4 @@
-import dotenv from 'dotenv';
 import {databaseConfig} from '../configs/database.config.js';
-
-dotenv.config();
 
 const port = process.env.AUTH_PORT;
 
