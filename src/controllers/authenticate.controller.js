@@ -62,3 +62,20 @@ export const Logout = asyncHandler(async (req, res) => {
     }
     res.sendStatus(204);
 });
+export const refreshToken = asyncHandler(async (req, res) => {
+    const tokenFromCookie = req.cookies?.refreshToken; 
+
+    if (!tokenFromCookie) {
+        throw new ErrorResponse("Không tìm thấy Refresh Token. Vui lòng đăng nhập lại!", 401);
+    }
+    try {
+        const newAccessToken = await AuthService.refresh(tokenFromCookie);
+        return res.status(200).json({ 
+            message: 'Làm mới token thành công', 
+            accessToken: newAccessToken 
+        });
+    } catch (error) {
+        res.clearCookie('refreshToken'); // Xóa luôn cái cookie rác
+        throw new ErrorResponse(error.message, 401);
+    }
+});
