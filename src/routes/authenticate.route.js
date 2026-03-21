@@ -5,4 +5,4 @@ export const authenticateRoute = express.Router();
 authenticateRoute.post('/login', Login);
 authenticateRoute.post('/register', Register);
 authenticateRoute.post('/logout', Logout);
-authRoute.post('/refresh', refreshToken);
+authenticateRoute.post('/refresh', refreshToken);
