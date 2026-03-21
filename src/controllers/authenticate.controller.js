@@ -21,6 +21,7 @@ export const Register = asyncHandler(async (req, res, next) => {
     })
     return res.sendStatus(204);
 });
+
 export const Login = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -37,11 +38,13 @@ export const Login = asyncHandler(async (req, res) => {
     const accessToken = jwt.sign({ user_id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.ACCESS_TOKEN_TTL });
     const refreshToken = uuid();
     const refreshTokenTTL = parseInt(process.env.REFESH_TOKEN_TTL, 10);
+    
     await authServices.createSession({
         user_id: user._id,
         refresh_token: refreshToken,
         expires_in: new Date(Date.now() + refreshTokenTTL)
     })
+    
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         maxAge: refreshTokenTTL,
@@ -49,20 +52,29 @@ export const Login = asyncHandler(async (req, res) => {
         secure: true,
         path: '/'
     });
+    
     return res.status(200).json({
-        messeage: `User ${user.display_name} logged in.`,
+        message: `User ${user.display_name} logged in.`,
         accessToken: accessToken
     });
+});
 
-})
 export const Logout = asyncHandler(async (req, res) => {
     const refreshToken = req.cookies?.refreshToken;
     if (refreshToken) {
         await authServices.deleteSession({ refresh_token: refreshToken });
-        res.clearCookie('refreshToken');
+        
+        // ĐÃ SỬA: Thêm cấu hình giống hệt lúc tạo để xóa được Cookie
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            sameSite: 'none',
+            secure: true,
+            path: '/'
+        });
     }
     res.sendStatus(204);
 });
+
 export const refreshToken = asyncHandler(async (req, res) => {
     const tokenFromCookie = req.cookies?.refreshToken; 
 
@@ -70,13 +82,20 @@ export const refreshToken = asyncHandler(async (req, res) => {
         throw new ErrorResponse("Không tìm thấy Refresh Token. Vui lòng đăng nhập lại!", 401);
     }
     try {
-        const newAccessToken = await AuthService.refresh(tokenFromCookie);
+        // ĐÃ SỬA: Đổi AuthService thành authServices cho đúng với import ở trên
+        const newAccessToken = await authServices.refresh(tokenFromCookie);
         return res.status(200).json({ 
             message: 'Làm mới token thành công', 
             accessToken: newAccessToken 
         });
     } catch (error) {
-        res.clearCookie('refreshToken'); // Xóa luôn cái cookie rác
+        // ĐÃ SỬA: Thêm cấu hình giống hệt lúc tạo để xóa được Cookie
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            sameSite: 'none',
+            secure: true,
+            path: '/'
+        });
         throw new ErrorResponse(error.message, 401);
     }
 });
