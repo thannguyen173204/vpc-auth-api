@@ -2,7 +2,7 @@ import User from "../models/user.model.js"
 import Session from "../models/session.model.js"
 import bcrypt from 'bcrypt';
 import DatabaseService from "./db.service.js";
-
+import jwt from 'jsonwebtoken'; 
 class AuthService {
     findUser = async (data) => {
         return await DatabaseService.find(User, data);
