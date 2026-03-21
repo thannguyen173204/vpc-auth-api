@@ -29,24 +29,21 @@ class AuthService {
         return await DatabaseService.delete(Session, data);
     }
     refresh = async (oldRefreshToken) => {
-        let decoded;
-        try {
-            decoded = jwt.verify(oldRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-        } catch (error) {
-            await Session.deleteOne({ refresh_token: oldRefreshToken });
-            throw new Error("Refresh Token không hợp lệ hoặc đã hết hạn");
-        }
-
-        const session = await Session.findOne({ refresh_token: oldRefreshToken, user_id: decoded.user_id });
+        const session = await Session.findOne({ refresh_token: oldRefreshToken });
 
         if (!session) {
             throw new Error("Phiên đăng nhập không tồn tại hoặc đã bị thu hồi");
         }
 
+        if (session.expires_in < new Date()) {
+            await Session.deleteOne({ _id: session._id });
+            throw new Error("Refresh Token đã hết hạn. Vui lòng đăng nhập lại");
+        }
+
         const newAccessToken = jwt.sign(
-            { user_id: decoded.user_id }, // Payload phải giống hệt lúc bạn tạo ở hàm login
+            { user_id: session.user_id },
             process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: '15m' } // Tuổi thọ ngắn: 15 phút
+            { expiresIn: process.env.ACCESS_TOKEN_TTL }
         );
 
         return newAccessToken;
