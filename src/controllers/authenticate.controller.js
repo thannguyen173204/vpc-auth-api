@@ -50,7 +50,7 @@ export const Login = asyncHandler(async (req, res) => {
     });
     return res.status(200).json({
         messeage: `User ${user.display_name} logged in.`,
-        token: accessToken
+        accessToken: accessToken
     });
 
 })
