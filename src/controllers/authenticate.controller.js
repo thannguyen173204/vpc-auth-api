@@ -24,18 +24,27 @@ export const Register = asyncHandler(async (req, res, next) => {
 
 export const Login = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
+    
     if (!username || !password) {
         throw new ErrorResponse("Vui lòng điền đủ nội dung", 400);
     }
+    
     const user = await authServices.findUser({ user_name: username });
     if (!user) {
         throw new ErrorResponse("User không tồn tại", 404);
     }
+    
     const match = await authServices.comparePassword(password, user.hashed_password);
     if (!match) {
         throw new ErrorResponse("Mật khẩu không đúng", 401);
     }
-    const accessToken = jwt.sign({ user_id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.ACCESS_TOKEN_TTL });
+    
+    const accessToken = jwt.sign(
+        { user_id: user._id }, 
+        process.env.ACCESS_TOKEN_SECRET, 
+        { expiresIn: process.env.ACCESS_TOKEN_TTL }
+    );
+    
     const refreshToken = uuid();
     const refreshTokenTTL = parseInt(process.env.REFESH_TOKEN_TTL, 10);
     
@@ -43,7 +52,7 @@ export const Login = asyncHandler(async (req, res) => {
         user_id: user._id,
         refresh_token: refreshToken,
         expires_in: new Date(Date.now() + refreshTokenTTL)
-    })
+    });
     
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
@@ -53,9 +62,16 @@ export const Login = asyncHandler(async (req, res) => {
         path: '/'
     });
     
+    // ĐÃ SỬA: Ném kèm thông tin user về cho Frontend
     return res.status(200).json({
         message: `User ${user.display_name} logged in.`,
-        accessToken: accessToken
+        accessToken: accessToken,
+        user: {
+            _id: user._id,
+            user_name: user.user_name,
+            display_name: user.display_name,
+            avt_url: user.avt_url || ""
+        }
     });
 });
 
